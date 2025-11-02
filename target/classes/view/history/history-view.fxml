@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+
+<BorderPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.HistoryController">
+   <center>
+      <SplitPane dividerPositions="0.4" orientation="VERTICAL" BorderPane.alignment="CENTER">
+         <items>
+            <TableView fx:id="historyTable">
+              <columns>
+                <TableColumn fx:id="dateColumn" prefWidth="150.0" text="Date" />
+                <TableColumn fx:id="employeeColumn" prefWidth="200.0" text="Employee" />
+                <TableColumn fx:id="customerColumn" prefWidth="200.0" text="Customer" />
+              </columns>
+               <columnResizePolicy>
+                  <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+               </columnResizePolicy>
+            </TableView>
+            <TextArea fx:id="receiptContentArea" editable="false" wrapText="true" />
+         </items>
+      </SplitPane>
+   </center>
+</BorderPane>

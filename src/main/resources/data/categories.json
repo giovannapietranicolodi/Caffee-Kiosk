@@ -1,0 +1,6 @@
+[
+  { "id": 1, "description": "Hot Drinks" },
+  { "id": 2, "description": "Cold Drinks" },
+  { "id": 3, "description": "Snacks" },
+  { "id": 4, "description": "Desserts" }
+]

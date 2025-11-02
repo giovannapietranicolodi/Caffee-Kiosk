@@ -1,0 +1,4 @@
+[
+  { "id": 1, "name": "Employee Discount", "amount": 10, "isPercentage": true, "isActive": true },
+  { "id": 2, "name": "Afternoon Special", "amount": 5, "isPercentage": true, "isActive": true }
+]

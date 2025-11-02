@@ -1,0 +1,14 @@
+[
+  {
+    "employeeName": "Admin",
+    "customerName": "John Doe",
+    "uploadDate": "2025-11-02T10:30:00",
+    "fileData": "\tOOP Caffee\n----------------------------------------------------\nDate: 2025-11-02 10:30:00\nServed by: Admin\nCustomer: John Doe\n----------------------------------------------------\n1 x Espresso                $5.00\n1 x Chocolate Cake          $7.00\n----------------------------------------------------\nSubtotal:                   $12.00\nTOTAL:                      $12.84\n----------------------------------------------------\nPayment Method: Credit Card\n\n\tThank you for your visit!\n"
+  },
+  {
+    "employeeName": "Caixa",
+    "customerName": "Jane Smith",
+    "uploadDate": "2025-11-01T15:45:00",
+    "fileData": "\tOOP Caffee\n----------------------------------------------------\nDate: 2025-11-01 15:45:00\nServed by: Caixa\nCustomer: Jane Smith\n----------------------------------------------------\n2 x Orange Juice            $12.00\n----------------------------------------------------\nSubtotal:                   $12.00\nTOTAL:                      $12.84\n----------------------------------------------------\nPayment Method: Cash\n\n\tThank you for your visit!\n"
+  }
+]
