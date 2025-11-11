@@ -1,7 +1,10 @@
+# This workflow builds and tests a Java project with Maven.
+
 name: Java CI with Maven
 
 # Controls when the workflow will run
 on:
+  # Triggers the workflow on push or pull request events for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
@@ -15,7 +18,9 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # 1. Checks-out your repository under $GITHUB_WORKSPACE
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -27,6 +32,7 @@ jobs:
           distribution: 'temurin'
 
       # 3. Caches Maven dependencies to speed up future builds
+      - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -37,3 +43,11 @@ jobs:
       # 4. Runs the tests using Maven
       - name: Run tests with Maven
         run: mvn clean test
+
+      # 5. Publishes the test results as a summary on the Actions page
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() # This step runs even if the previous one fails
+        with:
+          files: |
+            target/surefire-reports/**/*.xml
