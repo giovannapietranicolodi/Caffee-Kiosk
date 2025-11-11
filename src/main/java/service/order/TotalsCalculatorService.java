@@ -5,9 +5,8 @@ import model.entity.CartItem;
 import java.util.List;
 
 /**
- * A dedicated service for performing all order-related calculations.
- * This includes subtotal, taxes, and final totals, ensuring that business
- * logic for calculations is centralized.
+ * A dedicated service for performing all order-related calculations using integers for cents
+ * to avoid floating-point inaccuracies.
  */
 public class TotalsCalculatorService {
 
@@ -26,22 +25,22 @@ public class TotalsCalculatorService {
 
     /**
      * Calculates the tax amount based on the subtotal after discounts.
-     * @param subtotalAfterDiscount The subtotal minus any applicable discounts.
-     * @return The calculated tax amount in cents.
+     * @param subtotalAfterDiscount The subtotal minus any applicable discounts, in cents.
+     * @return The calculated tax amount in cents, rounded to the nearest cent.
      */
-    public double calculateTax(double subtotalAfterDiscount) {
-        return subtotalAfterDiscount * TAX_RATE;
+    public int calculateTax(int subtotalAfterDiscount) {
+        return (int) Math.round(subtotalAfterDiscount * TAX_RATE);
     }
 
     /**
      * Calculates the final total of the order.
-     * @param subtotal The initial subtotal.
-     * @param discountValue The value of the discount applied.
-     * @return The final total amount.
+     * @param subtotal The initial subtotal in cents.
+     * @param discountValue The value of the discount applied, in cents.
+     * @return The final total amount in cents.
      */
-    public double calculateFinalTotal(int subtotal, int discountValue) {
-        double subtotalAfterDiscount = subtotal - discountValue;
-        double tax = calculateTax(subtotalAfterDiscount);
+    public int calculateFinalTotal(int subtotal, int discountValue) {
+        int subtotalAfterDiscount = subtotal - discountValue;
+        int tax = calculateTax(subtotalAfterDiscount);
         return subtotalAfterDiscount + tax;
     }
 }

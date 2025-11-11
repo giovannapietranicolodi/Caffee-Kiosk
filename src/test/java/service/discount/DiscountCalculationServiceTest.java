@@ -80,4 +80,17 @@ class DiscountCalculationServiceTest {
         int discountValue = service.calculateDiscount(2000, otherDiscount, "abc", true);
         assertEquals(0, discountValue);
     }
+
+    @Test
+    @DisplayName("7. testDiscountCannotExceedSubtotal()")
+    void testDiscountCannotExceedSubtotal() {
+        Discount otherDiscount = new Discount(-1, "Other", 0, false, true);
+        // A discount of 110% should be capped at the subtotal (1000)
+        int discountValue = service.calculateDiscount(1000, otherDiscount, "110", true);
+        assertEquals(1000, discountValue);
+
+        // A fixed discount greater than the subtotal should be capped
+        int fixedDiscountValue = service.calculateDiscount(1000, otherDiscount, "1200", false);
+        assertEquals(1000, fixedDiscountValue);
+    }
 }

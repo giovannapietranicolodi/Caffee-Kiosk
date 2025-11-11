@@ -42,12 +42,13 @@ public class CheckoutHandler {
     private final Runnable onCheckoutComplete;
 
     // UI components from the main controller
+    private final Button checkoutButton;
     private final ComboBox<Discount> discountComboBox;
     private final TextField otherDiscountField;
     private final CheckBox otherDiscountPercentageCheckBox;
     private final TextArea observationsTextArea;
 
-    public CheckoutHandler(Cart cartService, Catalog menuCatalogService, ReceiptService receiptService, ReceiptBuilderService receiptBuilderService, DiscountCalculationService discountCalculationService, TotalsCalculatorService totalsCalculatorService, Runnable onCheckoutComplete, ComboBox<Discount> discountComboBox, TextField otherDiscountField, CheckBox otherDiscountPercentageCheckBox, TextArea observationsTextArea) {
+    public CheckoutHandler(Cart cartService, Catalog menuCatalogService, ReceiptService receiptService, ReceiptBuilderService receiptBuilderService, DiscountCalculationService discountCalculationService, TotalsCalculatorService totalsCalculatorService, Runnable onCheckoutComplete, Button checkoutButton, ComboBox<Discount> discountComboBox, TextField otherDiscountField, CheckBox otherDiscountPercentageCheckBox, TextArea observationsTextArea) {
         this.cartService = cartService;
         this.menuCatalogService = menuCatalogService;
         this.receiptService = receiptService;
@@ -55,6 +56,7 @@ public class CheckoutHandler {
         this.discountCalculationService = discountCalculationService;
         this.totalsCalculatorService = totalsCalculatorService;
         this.onCheckoutComplete = onCheckoutComplete;
+        this.checkoutButton = checkoutButton;
         this.discountComboBox = discountComboBox;
         this.otherDiscountField = otherDiscountField;
         this.otherDiscountPercentageCheckBox = otherDiscountPercentageCheckBox;
@@ -66,6 +68,7 @@ public class CheckoutHandler {
             showError("The cart is empty.");
             return;
         }
+        checkoutButton.setDisable(true);
 
         TextInputDialog nameDialog = new TextInputDialog();
         nameDialog.setTitle("Customer Name");
@@ -73,34 +76,38 @@ public class CheckoutHandler {
         nameDialog.setContentText("Name:");
         Optional<String> nameResult = nameDialog.showAndWait();
 
-        nameResult.ifPresent(customerName -> {
+        nameResult.ifPresentOrElse(customerName -> {
             if (customerName.trim().isEmpty()) {
                 showError("Customer name cannot be empty.");
+                checkoutButton.setDisable(false);
                 return;
             }
+            promptForPaymentMethod(customerName);
+        }, () -> checkoutButton.setDisable(false));
+    }
 
-            List<String> paymentTypes = Arrays.asList("Cash", "Credit Card", "Debit Card", "E-transfer");
-            ChoiceDialog<String> paymentDialog = new ChoiceDialog<>(paymentTypes.get(0), paymentTypes);
-            paymentDialog.setTitle("Payment Method");
-            paymentDialog.setHeaderText("Select a payment method:");
-            paymentDialog.setContentText("Method:");
-            Optional<String> paymentResult = paymentDialog.showAndWait();
+    private void promptForPaymentMethod(String customerName) {
+        List<String> paymentTypes = Arrays.asList("Cash", "Credit Card", "Debit Card", "E-transfer");
+        ChoiceDialog<String> paymentDialog = new ChoiceDialog<>(paymentTypes.getFirst(), paymentTypes);
+        paymentDialog.setTitle("Payment Method");
+        paymentDialog.setHeaderText("Select a payment method:");
+        paymentDialog.setContentText("Method:");
+        Optional<String> paymentResult = paymentDialog.showAndWait();
 
-            paymentResult.ifPresent(paymentType -> {
-                switch (paymentType) {
-                    case "Cash":
-                        handleCashPayment(customerName);
-                        break;
-                    case "E-transfer":
-                        handleETransferPayment(customerName);
-                        break;
-                    case "Credit Card":
-                    case "Debit Card":
-                        handleCardPayment(customerName, paymentType);
-                        break;
-                }
-            });
-        });
+        paymentResult.ifPresentOrElse(paymentType -> {
+            switch (paymentType) {
+                case "Cash":
+                    handleCashPayment(customerName);
+                    break;
+                case "E-transfer":
+                    handleETransferPayment(customerName);
+                    break;
+                case "Credit Card":
+                case "Debit Card":
+                    handleCardPayment(customerName, paymentType);
+                    break;
+            }
+        }, () -> checkoutButton.setDisable(false));
     }
 
     private void handleCardPayment(String customerName, String paymentType) {
@@ -124,40 +131,46 @@ public class CheckoutHandler {
             loadingStage.close();
             processFinalCheckout(customerName, paymentType, 0, 0);
         }));
+        task.setOnFailed(e -> Platform.runLater(() -> {
+            loadingStage.close();
+            showError("Payment processing failed.");
+            checkoutButton.setDisable(false);
+        }));
 
         new Thread(task).start();
         loadingStage.show();
     }
 
     private void handleCashPayment(String customerName) {
-        double total = totalsCalculatorService.calculateFinalTotal(
-                totalsCalculatorService.calculateSubtotal(cartService.getCartItems()),
-                discountCalculationService.calculateDiscount(totalsCalculatorService.calculateSubtotal(cartService.getCartItems()), discountComboBox.getSelectionModel().getSelectedItem(), otherDiscountField.getText(), otherDiscountPercentageCheckBox.isSelected())
-        );
+        int subtotal = totalsCalculatorService.calculateSubtotal(cartService.getCartItems());
+        int discount = discountCalculationService.calculateDiscount(subtotal, discountComboBox.getSelectionModel().getSelectedItem(), otherDiscountField.getText(), otherDiscountPercentageCheckBox.isSelected());
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, discount);
 
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Cash Payment");
-        dialog.setHeaderText("Total is " + CurrencyFormatter.format((int) Math.round(total)) + ".\nEnter amount tendered:");
+        dialog.setHeaderText("Total is " + CurrencyFormatter.formatCents(total) + ".\nEnter amount tendered:");
         dialog.setContentText("Amount:");
 
         Optional<String> result = dialog.showAndWait();
-        result.ifPresent(amountTenderedStr -> {
+        result.ifPresentOrElse(amountTenderedStr -> {
             try {
                 int amountTendered = Integer.parseInt(amountTenderedStr.replaceAll("[^0-9]", ""));
                 if (amountTendered < total) {
                     showError("Amount tendered is less than the total.");
+                    checkoutButton.setDisable(false);
                     return;
                 }
-                int change = amountTendered - (int) Math.round(total);
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment successful!\nChange due: " + CurrencyFormatter.format(change));
+                int change = amountTendered - total;
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment successful!\nChange due: " + CurrencyFormatter.formatCents(change));
                 alert.setTitle("Payment Complete");
                 alert.setHeaderText(null);
                 alert.showAndWait();
                 processFinalCheckout(customerName, "Cash", amountTendered, change);
             } catch (NumberFormatException e) {
                 showError("Invalid amount entered.");
+                checkoutButton.setDisable(false);
             }
-        });
+        }, () -> checkoutButton.setDisable(false));
     }
 
     private void handleETransferPayment(String customerName) {
@@ -177,18 +190,17 @@ public class CheckoutHandler {
     }
 
     private void processFinalCheckout(String customerName, String paymentType, int amountTendered, int change) {
-        int subtotal = totalsCalculatorService.calculateSubtotal(cartService.getCartItems());
-        Discount selectedDiscount = discountComboBox.getSelectionModel().getSelectedItem();
-        int discountValue = discountCalculationService.calculateDiscount(subtotal, selectedDiscount, otherDiscountField.getText(), otherDiscountPercentageCheckBox.isSelected());
-
-        String receiptContent = receiptBuilderService.buildReceiptContent(customerName, SessionManager.getInstance().getLoggedInEmployeeName(), cartService.getCartItems(), selectedDiscount, discountValue, observationsTextArea.getText(), paymentType, amountTendered, change);
-
         try {
-            receiptService.saveReceipt(customerName, SessionManager.getInstance().getLoggedInEmployeeId(), receiptContent.getBytes(StandardCharsets.UTF_8));
+            int subtotal = totalsCalculatorService.calculateSubtotal(cartService.getCartItems());
+            Discount selectedDiscount = discountComboBox.getSelectionModel().getSelectedItem();
+            int discountValue = discountCalculationService.calculateDiscount(subtotal, selectedDiscount, otherDiscountField.getText(), otherDiscountPercentageCheckBox.isSelected());
+            String receiptContent = receiptBuilderService.buildReceiptContent(customerName, SessionManager.getInstance().getLoggedInEmployeeName(), cartService.getCartItems(), selectedDiscount, discountValue, observationsTextArea.getText(), paymentType, amountTendered, change);
 
             for (CartItem item : cartService.getCartItems()) {
                 menuCatalogService.updateItemInventory(item.getItem().getId(), item.getQuantity());
             }
+
+            receiptService.saveReceipt(customerName, SessionManager.getInstance().getLoggedInEmployeeId(), receiptContent.getBytes(StandardCharsets.UTF_8));
 
             Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
             successAlert.setTitle("Checkout Complete");
@@ -206,7 +218,9 @@ public class CheckoutHandler {
             }
 
         } catch (Exception e) {
-            showError("Error during final checkout: " + e.getMessage());
+            showError("Error during final checkout: " + e.getMessage() + "\n\nThe order was not completed. Please check inventory or system logs.");
+        } finally {
+            checkoutButton.setDisable(false);
         }
     }
 

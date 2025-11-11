@@ -43,7 +43,7 @@ class TotalsCalculatorServiceTest {
     void testCalculateWithEmptyCart() {
         List<CartItem> cartItems = Collections.emptyList();
         int subtotal = totalsCalculatorService.calculateSubtotal(cartItems);
-        double total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
 
         assertEquals(0, subtotal);
         assertEquals(0, total);
@@ -56,10 +56,10 @@ class TotalsCalculatorServiceTest {
         List<CartItem> cartItems = Collections.singletonList(new CartItem(coffee, 2)); // Subtotal = 600
 
         int subtotal = totalsCalculatorService.calculateSubtotal(cartItems);
-        double total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
 
         assertEquals(600, subtotal);
-        assertEquals(642, Math.round(total)); // 600 + 7% tax
+        assertEquals(642, total); // 600 + 7% tax (42)
     }
 
     @Test
@@ -70,10 +70,10 @@ class TotalsCalculatorServiceTest {
         List<CartItem> cartItems = Arrays.asList(new CartItem(coffee, 1), new CartItem(cake, 1)); // Subtotal = 800
 
         int subtotal = totalsCalculatorService.calculateSubtotal(cartItems);
-        double total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, 0);
 
         assertEquals(800, subtotal);
-        assertEquals(856, Math.round(total)); // 800 + 7% tax
+        assertEquals(856, total); // 800 + 7% tax (56)
     }
 
     @Test
@@ -84,10 +84,10 @@ class TotalsCalculatorServiceTest {
         int discountValue = 100; // 10% of 1000
 
         int subtotal = totalsCalculatorService.calculateSubtotal(cartItems);
-        double total = totalsCalculatorService.calculateFinalTotal(subtotal, discountValue);
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, discountValue);
 
         assertEquals(1000, subtotal);
-        assertEquals(963, Math.round(total)); // (1000 - 100) + 7% tax
+        assertEquals(963, total); // (1000 - 100) = 900; 900 + 7% tax (63)
     }
 
     @Test
@@ -95,12 +95,12 @@ class TotalsCalculatorServiceTest {
     void testCalculateWithFixedAmountDiscount() {
         Item coffee = new Item(1, "Coffee", 1000, 10); // Subtotal = 1000
         List<CartItem> cartItems = Collections.singletonList(new CartItem(coffee, 1));
-        int discountValue = 200; // Fixed $2.00 discount
+        int discountValue = 200; // Fixed 200 cents discount
 
         int subtotal = totalsCalculatorService.calculateSubtotal(cartItems);
-        double total = totalsCalculatorService.calculateFinalTotal(subtotal, discountValue);
+        int total = totalsCalculatorService.calculateFinalTotal(subtotal, discountValue);
 
         assertEquals(1000, subtotal);
-        assertEquals(856, Math.round(total)); // (1000 - 200) + 7% tax
+        assertEquals(856, total); // (1000 - 200) = 800; 800 + 7% tax (56)
     }
 }

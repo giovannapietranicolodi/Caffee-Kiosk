@@ -22,10 +22,6 @@ import service.order.TotalsCalculatorService;
 
 import java.util.List;
 
-/**
- * Main controller for the Caffee Kiosk application.
- * Manages UI updates and delegates actions to appropriate services and handlers.
- */
 public class CaffeeController {
 
     //<editor-fold desc="FXML Injected Fields">
@@ -51,6 +47,7 @@ public class CaffeeController {
     @FXML private Label totalLabel;
     @FXML private Label employeeLabel;
     @FXML private Label percentageLabel;
+    @FXML private Button checkoutButton;
     //</editor-fold>
 
     //<editor-fold desc="Services and Controllers">
@@ -94,10 +91,10 @@ public class CaffeeController {
 
         cartItemNameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getItem().getName()));
         cartItemQtyColumn.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        cartItemPriceColumn.setCellValueFactory(cellData -> new SimpleStringProperty(CurrencyFormatter.format(cellData.getValue().getItem().getPrice())));
+        cartItemPriceColumn.setCellValueFactory(cellData -> new SimpleStringProperty(CurrencyFormatter.formatCents(cellData.getValue().getItem().getPrice())));
         cartItemTotalColumn.setCellValueFactory(cellData -> {
             int total = cellData.getValue().getItem().getPrice() * cellData.getValue().getQuantity();
-            return new SimpleStringProperty(CurrencyFormatter.format(total));
+            return new SimpleStringProperty(CurrencyFormatter.formatCents(total));
         });
     }
 
@@ -151,7 +148,7 @@ public class CaffeeController {
         try {
             List<Discount> discounts = discountService.getActiveDiscounts();
             discountComboBox.setItems(FXCollections.observableArrayList(discounts));
-            discountComboBox.getItems().add(0, new Discount(0, "None", 0, false, true));
+            discountComboBox.getItems().addFirst(new Discount(0, "None", 0, false, true));
             discountComboBox.getItems().add(new Discount(-1, "Other", 0, false, true));
             discountComboBox.getSelectionModel().selectFirst();
         } catch (Exception e) {
@@ -218,16 +215,11 @@ public class CaffeeController {
         updateTotals();
     }
 
-    /**
-     * Clears all transactional data from the UI and data services after a checkout is complete.
-     */
     public void clearCartAndResetUI() {
         cartService.clearCart();
         observationsTextArea.clear();
-        discountComboBox.getSelectionModel().selectFirst(); // Reset to "None"
-        refreshCart(); // Update UI to show empty cart and reset totals
-
-        // Refresh the item list to show updated inventory
+        discountComboBox.getSelectionModel().selectFirst();
+        refreshCart();
         if (lastSelectedCategoryId != -1) {
             handleCategorySelection(lastSelectedCategoryId);
         }
@@ -236,17 +228,14 @@ public class CaffeeController {
     private void updateTotals() {
         int subtotal = totalsCalculatorService.calculateSubtotal(cartService.getCartItems());
         int discountValue = discountCalculationService.calculateDiscount(subtotal, discountComboBox.getSelectionModel().getSelectedItem(), otherDiscountField.getText(), otherDiscountPercentageCheckBox.isSelected());
-        double subtotalAfterDiscount = subtotal - discountValue;
-        double tax = totalsCalculatorService.calculateTax(subtotalAfterDiscount);
-        double total = subtotalAfterDiscount + tax;
+        int subtotalAfterDiscount = subtotal - discountValue;
+        int tax = totalsCalculatorService.calculateTax(subtotalAfterDiscount);
+        int total = subtotalAfterDiscount + tax;
 
-        subtotalLabel.setText("Subtotal: " + CurrencyFormatter.format(subtotal));
-        discountLabel.setText("Discount: -" + CurrencyFormatter.format(discountValue));
-        
-        String taxString = "Tax (" + Math.round(TotalsCalculatorService.TAX_RATE * 100) + "%): " + CurrencyFormatter.format((int) tax);
-        taxLabel.setText(taxString);
-
-        totalLabel.setText("Total: " + CurrencyFormatter.format((int) total));
+        subtotalLabel.setText("Subtotal: " + CurrencyFormatter.formatCents(subtotal));
+        discountLabel.setText("Discount: -" + CurrencyFormatter.formatCents(discountValue));
+        taxLabel.setText("Tax (" + Math.round(TotalsCalculatorService.TAX_RATE * 100) + "%): " + CurrencyFormatter.formatCents(tax));
+        totalLabel.setText("Total: " + CurrencyFormatter.formatCents(total));
     }
 
     private void showError(String message) {
@@ -258,33 +247,13 @@ public class CaffeeController {
     }
 
     //<editor-fold desc="Getters and Setters">
-    public int getLastSelectedCategoryId() {
-        return lastSelectedCategoryId;
-    }
-
-    public ComboBox<Discount> getDiscountComboBox() {
-        return discountComboBox;
-    }
-
-    public TextField getOtherDiscountField() {
-        return otherDiscountField;
-    }
-
-    public CheckBox getOtherDiscountPercentageCheckBox() {
-        return otherDiscountPercentageCheckBox;
-    }
-
-    public TextArea getObservationsTextArea() {
-        return observationsTextArea;
-    }
-
-    public void setOnLogoutListener(Runnable onLogoutListener) {
-        this.onLogoutListener = onLogoutListener;
-    }
-
-    public void setCheckoutHandler(CheckoutHandler checkoutHandler) {
-        this.checkoutHandler = checkoutHandler;
-    }
+    public ComboBox<Discount> getDiscountComboBox() { return discountComboBox; }
+    public TextField getOtherDiscountField() { return otherDiscountField; }
+    public CheckBox getOtherDiscountPercentageCheckBox() { return otherDiscountPercentageCheckBox; }
+    public TextArea getObservationsTextArea() { return observationsTextArea; }
+    public Button getCheckoutButton() { return checkoutButton; }
+    public void setOnLogoutListener(Runnable onLogoutListener) { this.onLogoutListener = onLogoutListener; }
+    public void setCheckoutHandler(CheckoutHandler checkoutHandler) { this.checkoutHandler = checkoutHandler; }
     //</editor-fold>
 
     private static class CurrencyFormattingCell<T> extends TableCell<T, Integer> {
@@ -294,7 +263,7 @@ public class CaffeeController {
             if (empty || price == null) {
                 setText(null);
             } else {
-                setText(CurrencyFormatter.format(price));
+                setText(CurrencyFormatter.formatCents(price));
             }
         }
     }

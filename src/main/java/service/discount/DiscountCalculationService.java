@@ -10,12 +10,13 @@ public class DiscountCalculationService {
 
     /**
      * Calculates the total discount amount based on the selected discount type and subtotal.
+     * It ensures the discount never exceeds the subtotal.
      *
      * @param subtotal The order subtotal before any discounts.
      * @param selectedDiscount The {@link Discount} object selected by the user.
      * @param otherAmountStr The manually entered discount amount as a string.
      * @param isOtherPercentage True if the manual amount is a percentage, false if it is a fixed value.
-     * @return The calculated discount value in cents.
+     * @return The calculated and validated discount value in cents.
      */
     public int calculateDiscount(int subtotal, Discount selectedDiscount, String otherAmountStr, boolean isOtherPercentage) {
         int discountValue = 0;
@@ -24,7 +25,6 @@ public class DiscountCalculationService {
             return 0;
         }
 
-        // Handle manually entered ("Other") discounts
         if ("Other".equalsIgnoreCase(selectedDiscount.getName())) {
             if (otherAmountStr != null && !otherAmountStr.trim().isEmpty()) {
                 try {
@@ -38,13 +38,18 @@ public class DiscountCalculationService {
                     // Ignore invalid numbers, discount remains 0
                 }
             }
-        } else { // Handle pre-defined discounts from the database
+        } else { // Pre-defined discount
             if (selectedDiscount.isPercentage()) {
                 discountValue = (subtotal * selectedDiscount.getAmount()) / 100;
             } else {
                 discountValue = selectedDiscount.getAmount();
             }
         }
+
+        // Add validation to ensure discount is not negative and not greater than the subtotal
+        discountValue = Math.max(0, discountValue);
+        discountValue = Math.min(discountValue, subtotal);
+
         return discountValue;
     }
 }

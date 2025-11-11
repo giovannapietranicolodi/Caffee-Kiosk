@@ -56,9 +56,9 @@ class ReceiptBuilderServiceTest {
         CartItem cartItem2 = new CartItem(cake, 1);
         Discount discount = new Discount(1, "Staff Discount", 10, true, true);
 
-        // Arrange mocks
+        // Arrange mocks to return integers (cents)
         when(mockTotalsCalculatorService.calculateSubtotal(Arrays.asList(cartItem1, cartItem2))).thenReturn(950);
-        when(mockTotalsCalculatorService.calculateTax(950 - 95)).thenReturn(59.85);
+        when(mockTotalsCalculatorService.calculateTax(950 - 95)).thenReturn(60); // Corrected to int
 
         String receipt = receiptBuilderService.buildReceiptContent(
                 "Test Customer",
@@ -81,9 +81,9 @@ class ReceiptBuilderServiceTest {
         Item coffee = new Item(1, "Coffee", 250, 10);
         CartItem cartItem1 = new CartItem(coffee, 1);
 
-        // Arrange mocks
+        // Arrange mocks to return integers (cents)
         when(mockTotalsCalculatorService.calculateSubtotal(Collections.singletonList(cartItem1))).thenReturn(250);
-        when(mockTotalsCalculatorService.calculateTax(250)).thenReturn(17.5);
+        when(mockTotalsCalculatorService.calculateTax(250)).thenReturn(18); // Corrected to int
 
         String receipt = receiptBuilderService.buildReceiptContent(
                 "Another Customer",
@@ -93,7 +93,7 @@ class ReceiptBuilderServiceTest {
                 0,    // No discount value
                 "",   // No observations
                 "Cash",
-                300, 33 // Example change
+                300, 32 // Corrected change
         );
 
         assertFalse(receipt.contains("Discount"));

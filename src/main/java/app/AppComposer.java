@@ -8,6 +8,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import repo.repository.*;
 import service.auth.AuthService;
 import service.auth.DBAuthService;
@@ -36,6 +38,7 @@ import java.util.Properties;
 
 public class AppComposer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppComposer.class);
     private Stage primaryStage;
     private Properties properties;
     private String dataSource;
@@ -59,16 +62,20 @@ public class AppComposer {
     private void loadConfig() {
         properties = new Properties();
         try (InputStream input = getClass().getResourceAsStream("/app.properties")) {
+            if (input == null) {
+                LOGGER.error("app.properties not found, defaulting to DBConnection.");
+                dataSource = "DBConnection";
+                return;
+            }
             properties.load(input);
             dataSource = properties.getProperty("data.source", "DBConnection");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error loading app.properties, defaulting to DBConnection.", e);
             dataSource = "DBConnection";
         }
     }
 
     private void createServices() {
-        // This service depends on another, so it's created after the main block
         receiptBuilderService = new ReceiptBuilderService(totalsCalculatorService);
 
         if ("InternalFile".equals(dataSource)) {
@@ -109,7 +116,8 @@ public class AppComposer {
             primaryStage.show();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("FATAL: Could not load login-view.fxml.", e);
+            Platform.exit();
         }
     }
 
@@ -130,14 +138,16 @@ public class AppComposer {
             loader.setControllerFactory(param -> caffeeController);
             Parent root = loader.load();
 
-            // Correctly define the checkout completion logic
             Runnable onCheckoutComplete = caffeeController::clearCartAndResetUI;
             
             CheckoutHandler checkoutHandler = new CheckoutHandler(
                     cartService, menuCatalogService, receiptService, receiptBuilderService, 
                     discountCalculationService, totalsCalculatorService, onCheckoutComplete,
-                    caffeeController.getDiscountComboBox(), caffeeController.getOtherDiscountField(), 
-                    caffeeController.getOtherDiscountPercentageCheckBox(), caffeeController.getObservationsTextArea()
+                    caffeeController.getCheckoutButton(),
+                    caffeeController.getDiscountComboBox(), 
+                    caffeeController.getOtherDiscountField(), 
+                    caffeeController.getOtherDiscountPercentageCheckBox(), 
+                    caffeeController.getObservationsTextArea()
             );
             caffeeController.setCheckoutHandler(checkoutHandler);
 
@@ -153,7 +163,8 @@ public class AppComposer {
             caffeeController.start();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("FATAL: Could not load main-view.fxml.", e);
+            Platform.exit();
         }
     }
 }
